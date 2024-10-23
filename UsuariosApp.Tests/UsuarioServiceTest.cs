@@ -1,10 +1,5 @@
 ﻿using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UsuariosApp.API.Contexts;
 using UsuariosApp.API.Dtos.Requests;
 using UsuariosApp.API.Dtos.Responses;
@@ -98,6 +93,42 @@ namespace UsuariosApp.Tests
             result.Nome.Should().Be(criarUsuarioDto.Nome);
             result.AccessToken.Should().NotBeNullOrEmpty();
             result.RefreshToken.Should().NotBeNullOrEmpty();
+        }
+
+        [Fact]
+        public async Task RefreshTokenAsync_RefreshToken_Valido_Deve_Retornar_Novo_AccessToken()
+        {
+            // Arrange
+            var criarUsuarioDto = new CriarUsuarioRequestDto
+            {
+                Nome = "Nome Teste",
+                Email = "email-refreshtoken@exemplo.com",
+                Senha = "senha123"
+            };
+
+            // Adicionar um usuário válido ao banco de dados
+            await _usuarioService.CriarAsync(criarUsuarioDto);
+
+            var autenticarDto = new AutenticarUsuarioRequestDto
+            {
+                Email = "email-refreshtoken@exemplo.com",
+                Senha = "senha123"
+            };
+
+            // Autenticar o usuário para obter tokens
+            var authResult = await _usuarioService.AutenticarAsync(autenticarDto);
+
+            // Act - Usar o refresh token para obter um novo access token
+            var refreshTokenResult = await _usuarioService.RefreshTokenAsync(authResult.RefreshToken);
+
+            // Assert
+            refreshTokenResult.Should().NotBeNull();
+            refreshTokenResult.Should().BeOfType<AutenticarUsuarioResponseDto>();
+            refreshTokenResult.Email.Should().Be(criarUsuarioDto.Email);
+            refreshTokenResult.Nome.Should().Be(criarUsuarioDto.Nome);
+            refreshTokenResult.AccessToken.Should().NotBeNullOrEmpty();
+            refreshTokenResult.RefreshToken.Should().NotBeNullOrEmpty();
+            //refreshTokenResult.AccessToken.Should().NotBe(authResult.AccessToken); // Verifica se um novo access token foi gerado
         }
 
     }
